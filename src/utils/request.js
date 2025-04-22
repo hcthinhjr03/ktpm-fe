@@ -27,9 +27,9 @@ export const del = async (path) => {
   return result;
 };
 
-export const patch = async (path, options = {}) => {
+export const put = async (path, options = {}) => {
   const response = await fetch(API_DOMAIN + path, {
-    method: "PATCH",
+    method: "PUT",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
