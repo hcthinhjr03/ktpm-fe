@@ -1,205 +1,385 @@
-Water Service API Specification
-Base URL
-http://localhost:8081/api/water-service
-Endpoints
-1. Get All Water Services
-Retrieves a list of all water services.
+# Đặc tả API cho hệ thống quản lý nước
 
-URL: /
-Method: GET
-Auth required: No
-Permissions required: None
+## 1. Contract API
 
-Success Response
+### 1.1. Lấy tất cả hợp đồng
 
-Code: 200 OK
-Content example:
-
-json[
-  {
-    "serviceId": 1,
-    "serviceName": "Cấp nước sinh hoạt",
-    "description": "Dịch vụ cung cấp nước sạch cho căn hộ",
-    "unit": "m³",
-    "priceRates": [
-      {
-        "rateId": 1,
-        "fromAmount": 0,
-        "toAmount": 10,
-        "unitPrice": 5700,
-        "effectiveDate": "2025-01-01",
-        "expiryDate": "2025-12-31"
+- **Endpoint**: `GET /api/contracts`
+- **Method**: GET
+- **Parameters**: Không có
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng Contract
+  ```json
+  [
+    {
+      "contractId": 1,
+      "signDate": "2025-04-01",
+      "startDate": "2025-04-05",
+      "endDate": "2026-04-05",
+      "status": "active",
+      "apartment": {
+        "apartmentId": 1,
+        "apartmentNumber": "A101",
+        "building": "Tòa nhà A",
+        "area": 85.5,
+        "status": "occupied"
+      },
+      "waterService": {
+        "serviceId": 1,
+        "serviceName": "Nước sinh hoạt",
+        "description": "Dịch vụ cung cấp nước sinh hoạt",
+        "unit": "m³",
+        "priceRates": [
+          {
+            "rateId": 1,
+            "fromAmount": 0.0,
+            "toAmount": 10.0,
+            "unitPrice": 5800.0,
+            "effectiveDate": "2023-01-01",
+            "expiryDate": "2023-12-31"
+          }
+        ]
+      },
+      "customer": {
+        "customerId": 1,
+        "fullName": "Nguyễn Văn A",
+        "identityCard": "123456789012",
+        "phoneNumber": "0987654321",
+        "email": "nguyenvana@example.com",
+        "address": "Hà Nội"
       }
-    ]
-  },
+    }
+  ]
+  ```
+
+### 1.2. Lấy hợp đồng theo ID
+
+- **Endpoint**: `GET /api/contracts/{id}`
+- **Method**: GET
+- **Path Parameters**:
+  - `id`: ID của hợp đồng cần lấy
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Contract
+  ```json
+    {
+      "contractId": 1,
+      "signDate": "2025-04-01",
+      "startDate": "2025-04-05",
+      "endDate": "2026-04-05",
+      "status": "active",
+      "apartment": {
+        "apartmentId": 1,
+        "apartmentNumber": "A101",
+        "building": "Tòa nhà A",
+        "area": 85.5,
+        "status": "occupied"
+      },
+      "waterService": {
+        "serviceId": 1,
+        "serviceName": "Nước sinh hoạt",
+        "description": "Dịch vụ cung cấp nước sinh hoạt",
+        "unit": "m³",
+        "priceRates": [
+          {
+            "rateId": 1,
+            "fromAmount": 0.0,
+            "toAmount": 10.0,
+            "unitPrice": 5800.0,
+            "effectiveDate": "2023-01-01",
+            "expiryDate": "2023-12-31"
+          }
+        ]
+      },
+      "customer": {
+        "customerId": 1,
+        "fullName": "Nguyễn Văn A",
+        "identityCard": "123456789012",
+        "phoneNumber": "0987654321",
+        "email": "nguyenvana@example.com",
+        "address": "Hà Nội"
+      }
+    }
+  ```
+
+### 1.3. Tạo hợp đồng mới
+
+- **Endpoint**: `POST /api/contracts`
+- **Method**: POST
+- **Request Body**:
+  ```json
   {
-    "serviceId": 2,
-    "serviceName": "Nước sinh hoạt cao cấp",
-    "description": "Dịch vụ cung cấp nước sạch cao cấp",
-    "unit": "m³",
-    "priceRates": []
+    "signDate": "2025-04-01",
+    "startDate": "2025-04-05",
+    "endDate": "2026-04-05",
+    "status": "active",
+    "apartment": {
+      "apartmentId": 1
+    },
+    "waterService": {
+      "serviceId": 1
+    },
+    "customer": {
+      "customerId": 1
+    }
   }
-]
+  ```
+- **Response**:
+  - Status: 201 Created
+  - Body: Đối tượng Contract đã tạo
 
-2. Get Water Service By ID
-Retrieves a specific water service by its ID.
+### 1.7. Xóa hợp đồng
 
-URL: /{id}
-Method: GET
-URL Parameters:
+- **Endpoint**: `DELETE /api/contracts/{id}`
+- **Method**: DELETE
+- **Path Parameters**:
+  - `id`: ID của hợp đồng cần xóa
+- **Response**:
+  - Status: 204 No Content nếu xóa thành công
+  - Status: 404 Not Found nếu không tìm thấy hợp đồng
+  ```
 
-id: Integer - ID of the water service to retrieve
+## 2. Customer API
 
+### 2.1. Lấy tất cả khách hàng
 
-Auth required: No
-Permissions required: None
-
-Success Response
-
-Code: 200 OK
-Content example:
-
-json{
-  "serviceId": 1,
-  "serviceName": "Cấp nước sinh hoạt",
-  "description": "Dịch vụ cung cấp nước sạch cho căn hộ",
-  "unit": "m³",
-  "priceRates": [
+- **Endpoint**: `GET /api/customers`
+- **Method**: GET
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng Customer
+  ```json
+  [
     {
-      "rateId": 1,
-      "fromAmount": 0,
-      "toAmount": 10,
-      "unitPrice": 5700,
-      "effectiveDate": "2025-01-01",
-      "expiryDate": "2025-12-31"
+      "customerId": 1,
+      "fullName": "Nguyễn Văn A",
+      "identityCard": "123456789012",
+      "phoneNumber": "0987654321",
+      "email": "nguyenvana@example.com",
+      "address": "Hà Nội"
     }
   ]
-}
-Error Response
+  ```
 
-Code: 404 NOT FOUND
-Content: Empty
+### 2.2. Lấy khách hàng theo ID
 
+- **Endpoint**: `GET /api/customers/{id}`
+- **Method**: GET
+- **Path Parameters**:
+  - `id`: ID của khách hàng cần lấy
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Customer
 
-3. Create Water Service
-Creates a new water service.
+### 2.3. Tìm khách hàng theo CMND/CCCD
 
-URL: /
-Method: POST
-Auth required: No
-Permissions required: None
-Content-Type: application/json
+- **Endpoint**: `GET /api/customers/search/identity-card`
+- **Method**: GET
+- **Request Parameters**:
+  - `identityCard`: Số CMND/CCCD của khách hàng
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Customer
 
-Request Body
-json{
-  "serviceName": "Cấp nước sinh hoạt",
-  "description": "Dịch vụ cung cấp nước sạch cho căn hộ",
-  "unit": "m³",
-  "priceRates": [
+### 2.4. Tìm khách hàng theo số điện thoại
+
+- **Endpoint**: `GET /api/customers/search/phone`
+- **Method**: GET
+- **Request Parameters**:
+  - `phoneNumber`: Số điện thoại của khách hàng
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Customer
+
+### 2.5. Tìm khách hàng theo email
+
+- **Endpoint**: `GET /api/customers/search/email`
+- **Method**: GET
+- **Request Parameters**:
+  - `email`: Email của khách hàng
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Customer
+
+### 2.6. Tìm khách hàng theo tên
+
+- **Endpoint**: `GET /api/customers/search/name`
+- **Method**: GET
+- **Request Parameters**:
+  - `fullName`: Tên đầy đủ hoặc một phần tên của khách hàng
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng Customer
+
+### 2.7. Tạo khách hàng mới
+
+- **Endpoint**: `POST /api/customers`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "fullName": "Nguyễn Văn B",
+    "identityCard": "987654321098",
+    "phoneNumber": "0123456789",
+    "email": "nguyenvanb@example.com",
+    "address": "Hồ Chí Minh"
+  }
+  ```
+- **Response**:
+  - Status: 201 Created
+  - Body: Đối tượng Customer đã tạo
+
+### 2.8. Cập nhật khách hàng
+
+- **Endpoint**: `PUT /api/customers/{id}`
+- **Method**: PUT
+- **Path Parameters**:
+  - `id`: ID của khách hàng cần cập nhật
+- **Request Body**:
+  ```json
+  {
+    "fullName": "Nguyễn Văn B Updated",
+    "phoneNumber": "0123456789",
+    "email": "nguyenvanb.updated@example.com",
+    "address": "Đà Nẵng"
+  }
+  ```
+- **Response**:
+  - Status: 200 OK nếu cập nhật thành công
+  - Status: 404 Not Found nếu không tìm thấy khách hàng
+  - Body: Đối tượng Customer đã cập nhật
+
+### 2.9. Xóa khách hàng
+
+- **Endpoint**: `DELETE /api/customers/{id}`
+- **Method**: DELETE
+- **Path Parameters**:
+  - `id`: ID của khách hàng cần xóa
+- **Response**:
+  - Status: 204 No Content nếu xóa thành công
+  - Status: 404 Not Found nếu không tìm thấy khách hàng
+
+## 3. Apartment API
+
+### 3.1. Lấy tất cả căn hộ
+
+- **Endpoint**: `GET /api/apartments`
+- **Method**: GET
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng Apartment
+  ```json
+  [
     {
-      "fromAmount": 0,
-      "toAmount": 10,
-      "unitPrice": 5700,
-      "effectiveDate": "2025-01-01",
-      "expiryDate": "2025-12-31"
+      "apartmentId": 1,
+      "apartmentNumber": "A101",
+      "building": "Tòa nhà A",
+      "area": 85.5,
+      "status": "occupied",
+      "customer": {
+        "customerId": 1,
+        "fullName": "Nguyễn Văn A"
+      }
     }
   ]
-}
-Success Response
+  ```
 
-Code: 201 CREATED
-Content example:
+### 3.2. Lấy căn hộ theo ID
 
-json{
-  "serviceId": 1,
-  "serviceName": "Cấp nước sinh hoạt",
-  "description": "Dịch vụ cung cấp nước sạch cho căn hộ",
-  "unit": "m³",
-  "priceRates": [
-    {
-      "rateId": 1,
-      "fromAmount": 0,
-      "toAmount": 10,
-      "unitPrice": 5700,
-      "effectiveDate": "2025-01-01",
-      "expiryDate": "2025-12-31"
+- **Endpoint**: `GET /api/apartments/{id}`
+- **Method**: GET
+- **Path Parameters**:
+  - `id`: ID của căn hộ cần lấy
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng Apartment
+
+### 3.3. Lấy căn hộ theo khách hàng
+
+- **Endpoint**: `GET /api/apartments/customer/{customerId}`
+- **Method**: GET
+- **Path Parameters**:
+  - `customerId`: ID của khách hàng
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng Apartment của khách hàng đó
+
+
+### 3.6. Tạo căn hộ mới
+
+- **Endpoint**: `POST /api/apartments`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "apartmentNumber": "B202",
+    "building": "Tòa nhà B",
+    "area": 72.3,
+    "status": "vacant",
+    "customer": {
+      "customerId": 2
     }
-  ]
-}
+  }
+  ```
+- **Response**:
+  - Status: 201 Created
+  - Body: Đối tượng Apartment đã tạo
 
-4. Update Water Service
-Updates an existing water service.
+### 3.7. Cập nhật căn hộ
 
-URL: /{id}
-Method: PUT
-URL Parameters:
-
-id: Integer - ID of the water service to update
-
-
-Auth required: No
-Permissions required: None
-Content-Type: application/json
-
-Request Body
-json{
-  "serviceName": "Cấp nước sinh hoạt cao cấp",
-  "description": "Dịch vụ cung cấp nước sạch cao cấp cho căn hộ",
-  "unit": "m³",
-  "priceRates": [
-    {
-      "fromAmount": 0,
-      "toAmount": 10,
-      "unitPrice": 6000,
-      "effectiveDate": "2025-01-01",
-      "expiryDate": "2025-12-31"
+- **Endpoint**: `PUT /api/apartments/{id}`
+- **Method**: PUT
+- **Path Parameters**:
+  - `id`: ID của căn hộ cần cập nhật
+- **Request Body**:
+  ```json
+  {
+    "apartmentNumber": "B202",
+    "status": "occupied",
+    "customer": {
+      "customerId": 3
     }
-  ]
-}
-Success Response
+  }
+  ```
+- **Response**:
+  - Status: 200 OK nếu cập nhật thành công
+  - Status: 404 Not Found nếu không tìm thấy căn hộ
+  - Body: Đối tượng Apartment đã cập nhật
 
-Code: 200 OK
-Content example:
+### 3.8. Xóa căn hộ
 
-json{
-  "serviceId": 1,
-  "serviceName": "Cấp nước sinh hoạt cao cấp",
-  "description": "Dịch vụ cung cấp nước sạch cao cấp cho căn hộ",
-  "unit": "m³",
-  "priceRates": [
-    {
-      "rateId": 1,
-      "fromAmount": 0,
-      "toAmount": 10,
-      "unitPrice": 6000,
-      "effectiveDate": "2025-01-01",
-      "expiryDate": "2025-12-31"
-    }
-  ]
-}
-Error Response
+- **Endpoint**: `DELETE /api/apartments/{id}`
+- **Method**: DELETE
+- **Path Parameters**:
+  - `id`: ID của căn hộ cần xóa
+- **Response**:
+  - Status: 204 No Content nếu xóa thành công
+  - Status: 404 Not Found nếu không tìm thấy căn hộ
 
-Code: 404 NOT FOUND
-Content: Empty
+## 4. Water Service API
 
+### 4.1. Lấy tất cả dịch vụ nước
 
-5. Delete Water Service
-Deletes a water service by its ID.
+- **Endpoint**: `GET /api/water-service`
+- **Method**: GET
+- **Response**:
+  - Status: 200 OK
+  - Body: Mảng các đối tượng WaterService
 
-URL: /{id}
-Method: DELETE
-URL Parameters:
+### 4.2. Lấy dịch vụ nước theo ID
 
-id: Integer - ID of the water service to delete
-
-
-Auth required: No
-Permissions required: None
-
-Success Response
-    Code: 204 NO CONTENT
-    Content: Empty
-
-Error Response
-    Code: 404 NOT FOUND
-    Content: Empty
+- **Endpoint**: `GET /api/water-service/{id}`
+- **Method**: GET
+- **Path Parameters**:
+  - `id`: ID của dịch vụ nước cần lấy
+- **Response**:
+  - Status: 200 OK nếu tìm thấy
+  - Status: 404 Not Found nếu không tìm thấy
+  - Body: Đối tượng WaterService
