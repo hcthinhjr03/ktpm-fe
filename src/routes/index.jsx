@@ -5,6 +5,8 @@ import MainFunction from "../pages/MainFunction";
 import Statistic from "../pages/Statistic";
 import { Navigate } from "react-router-dom";
 import WaterServiceManagement from "../pages/Management/WaterServiceManagement";
+import SignContract from "../pages/MainFunction/SignContract";
+import WaterServiceStatistic from "../pages/Statistic/WaterServiceStatistic";
 
 export const routes = [
     {
@@ -28,8 +30,16 @@ export const routes = [
                 element: <MainFunction/>
             },
             {
+                path: "mainfunction/sign-contract",
+                element: <SignContract/>
+            },
+            {
                 path: "statistic",
                 element: <Statistic/>
+            },
+            {
+                path: "statistic/water-service",
+                element: <WaterServiceStatistic/>
             },
         ],
     },
