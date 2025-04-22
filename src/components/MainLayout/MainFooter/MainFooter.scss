@@ -1,0 +1,41 @@
+.footer {
+    
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    // margin-top: 66px;
+    // height: 120px;
+  
+    &__social {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+    }
+  
+    &__end {
+      padding-bottom: 15px;
+      padding-top: 5px;
+    }
+  
+    &__box {
+      width: 40px;
+      height: 40px;
+      background-color: #FF7F50;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px;
+      font-size: 20px;
+      color: #fff;
+  
+      &:hover {
+        background-color: #fff;
+        color: #FF7F50;
+        transition: all 0.5s;
+      }
+    }
+  }
