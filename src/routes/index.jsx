@@ -4,6 +4,7 @@ import Management from "../pages/Management";
 import MainFunction from "../pages/MainFunction";
 import Statistic from "../pages/Statistic";
 import { Navigate } from "react-router-dom";
+import WaterServiceManagement from "../pages/Management/WaterServiceManagement";
 
 export const routes = [
     {
@@ -17,6 +18,10 @@ export const routes = [
             {
                 path: "management",
                 element: <Management/>
+            },
+            {
+                path: "management/water-service",
+                element: <WaterServiceManagement/>
             },
             {
                 path: "mainfunction",

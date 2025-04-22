@@ -4,7 +4,7 @@ import './App.css'
 
 function App() {
   useEffect(() => {
-    document.title = 'Internet Of Things';
+    document.title = 'KTPM 2025';
   }, [])
   return (
     <AllRoutes/>
