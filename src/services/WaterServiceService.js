@@ -62,3 +62,25 @@ export const deleteWaterService = async (id) => {
       throw error;
     }
   };
+
+  // Check if undo is possible
+export const canUndo = async () => {
+  try {
+    const response = await get(`${BASE_PATH}/actions/can-undo`);
+    return response;
+  } catch (error) {
+    console.error("Error checking undo availability:", error);
+    return false;
+  }
+};
+
+// Undo last action
+export const undoLastAction = async () => {
+  try {
+    const response = await post(`${BASE_PATH}/actions/undo`);
+    return response;
+  } catch (error) {
+    console.error("Error undoing last action:", error);
+    throw error;
+  }
+};
