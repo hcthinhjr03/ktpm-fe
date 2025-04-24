@@ -37,7 +37,6 @@ function WaterServiceStatistic() {
   const [loading, setLoading] = useState(false);
   const [statistics, setStatistics] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalContracts, setTotalContracts] = useState(0);
   const [dateRange, setDateRange] = useState([null, null]);
   
   // For detailed view
@@ -141,12 +140,6 @@ function WaterServiceStatistic() {
       render: (revenue) => formatCurrency(revenue),
       sorter: (a, b) => a.revenue - b.revenue,
       defaultSortOrder: 'descend',
-    },
-    {
-      title: 'Số hợp đồng',
-      dataIndex: 'totalContracts',
-      key: 'totalContracts',
-      width: 130,
     },
     {
       title: 'Thao tác',
@@ -253,15 +246,6 @@ function WaterServiceStatistic() {
             />
           </Card>
         </Col>
-        <Col xs={24} md={12}>
-          <Card>
-            <Statistic
-              title="Tổng số hợp đồng"
-              value={totalContracts}
-              valueStyle={{ color: '#FF7F50' }}
-            />
-          </Card>
-        </Col>
       </Row>
 
       {/* Main statistics table */}
@@ -294,13 +278,6 @@ function WaterServiceStatistic() {
                   title="Doanh thu"
                   value={selectedService.revenue}
                   formatter={(value) => formatCurrency(value)}
-                  valueStyle={{ color: '#FF7F50' }}
-                />
-              </Col>
-              <Col span={12}>
-                <Statistic
-                  title="Số hợp đồng"
-                  value={selectedService.totalContracts}
                   valueStyle={{ color: '#FF7F50' }}
                 />
               </Col>

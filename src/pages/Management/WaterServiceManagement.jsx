@@ -13,7 +13,6 @@ import {
   DatePicker,
   InputNumber,
   Card,
-  Tooltip
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -22,7 +21,6 @@ import {
   EditOutlined, 
   DeleteOutlined, 
   ReloadOutlined,
-  UndoOutlined
 } from "@ant-design/icons";
 import { 
   getAllWaterServices, 
@@ -30,8 +28,6 @@ import {
   updateWaterService,
   getWaterServiceById,
   deleteWaterService,
-  canUndo,
-  undoLastAction
 } from "../../services/WaterServiceService";
 import dayjs from 'dayjs';
 
@@ -46,7 +42,6 @@ function WaterServiceManagement() {
   const [form] = Form.useForm();
   const [currentService, setCurrentService] = useState(null);
   const [priceRates, setPriceRates] = useState([]);
-  const [canUndoAction, setCanUndoAction] = useState(false);
 
   // Fetch all water services on component mount
   const fetchWaterServices = useCallback(async () => {
@@ -178,31 +173,6 @@ function WaterServiceManagement() {
     }
   };
 
-  const handleUndo = async () => {
-    setLoading(true);
-    try {
-      // First, execute the undo operation
-      const response = await undoLastAction();
-      message.success("Hoàn tác thao tác cuối cùng thành công");
-      
-      // Then, execute the reload logic to refresh the list
-      await fetchWaterServices();
-    } catch (error) {
-      console.error("Error undoing last action:", error);
-      if (error.response && error.response.status === 400) {
-        message.warning("Không có thao tác nào để hoàn tác");
-        setCanUndoAction(false);
-      } else {
-        message.error("Không thể hoàn tác thao tác. Vui lòng thử lại sau");
-      }
-      
-      // Even on error, we still refresh the data to make sure UI is in sync
-      await fetchWaterServices();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const addPriceRate = () => {
     const newRate = {
       fromAmount: 0,
@@ -297,16 +267,6 @@ function WaterServiceManagement() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2}>Quản lý dịch vụ nước</Title>
         <Space>
-          <Tooltip title={canUndoAction ? "Hoàn tác thao tác cuối cùng" : "Không có thao tác nào để hoàn tác"}>
-            <Button 
-              icon={<UndoOutlined />} 
-              onClick={handleUndo}
-              disabled={!canUndoAction}
-              loading={loading && canUndoAction}
-            >
-              Hoàn tác
-            </Button>
-          </Tooltip>
           <Button 
             icon={<ReloadOutlined />} 
             onClick={fetchWaterServices}
