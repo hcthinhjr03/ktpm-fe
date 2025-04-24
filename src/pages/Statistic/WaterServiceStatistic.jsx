@@ -37,6 +37,7 @@ function WaterServiceStatistic() {
   const [loading, setLoading] = useState(false);
   const [statistics, setStatistics] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalContracts, setTotalContracts] = useState(0);
   const [dateRange, setDateRange] = useState([null, null]);
   
   // For detailed view
@@ -63,8 +64,10 @@ function WaterServiceStatistic() {
       
       // Calculate totals
       const revenue = sortedData.reduce((sum, item) => sum + item.revenue, 0);
+      const contracts = sortedData.reduce((sum, item) => sum + item.totalContracts, 0);
       
       setTotalRevenue(revenue);
+      setTotalContracts(contracts);
     } catch (error) {
       console.error("Error fetching statistics:", error);
       message.error("Không thể tải dữ liệu thống kê. Vui lòng thử lại sau!");
@@ -87,6 +90,7 @@ function WaterServiceStatistic() {
 
   const handleResetFilter = () => {
     setDateRange([null, null]);
+    // Re-fetch statistics without date filters
     fetchStatistics();
   };
 
@@ -137,6 +141,12 @@ function WaterServiceStatistic() {
       render: (revenue) => formatCurrency(revenue),
       sorter: (a, b) => a.revenue - b.revenue,
       defaultSortOrder: 'descend',
+    },
+    {
+      title: 'Số hợp đồng',
+      dataIndex: 'totalContracts',
+      key: 'totalContracts',
+      width: 130,
     },
     {
       title: 'Thao tác',
@@ -239,6 +249,15 @@ function WaterServiceStatistic() {
               value={totalRevenue}
               formatter={(value) => formatCurrency(value)}
               prefix={<DollarOutlined />}
+              valueStyle={{ color: '#FF7F50' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card>
+            <Statistic
+              title="Tổng số hợp đồng"
+              value={totalContracts}
               valueStyle={{ color: '#FF7F50' }}
             />
           </Card>
