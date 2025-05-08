@@ -13,7 +13,9 @@ import {
   message, 
   Statistic, 
   Tooltip, 
-  Modal
+  Modal,
+  Select,
+  Tabs
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -21,16 +23,20 @@ import {
   FilterOutlined, 
   ReloadOutlined, 
   EyeOutlined, 
-  DollarOutlined
+  DollarOutlined,
+  LineChartOutlined,
+  PercentageOutlined
 } from "@ant-design/icons";
 import dayjs from 'dayjs';
 import { 
   getWaterServiceStatistics, 
-  getWaterServiceBills 
+  getWaterServiceBills,
+  getWaterServiceStatisticById 
 } from "../../services/WaterServiceStatisticService";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 function WaterServiceStatistic() {
   const navigate = useNavigate();
@@ -38,35 +44,34 @@ function WaterServiceStatistic() {
   const [statistics, setStatistics] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [dateRange, setDateRange] = useState([null, null]);
+  const [selectedStrategy, setSelectedStrategy] = useState("total");
   
   // For detailed view
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [detailedBills, setDetailedBills] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailStrategy, setDetailStrategy] = useState("total");
 
-  // Fetch statistics on component mount and when date range changes
+  // Fetch statistics on component mount and when filters change
   useEffect(() => {
     fetchStatistics();
-  }, []);
+  }, [dateRange, selectedStrategy]);
 
   const fetchStatistics = async () => {
     setLoading(true);
     try {
       const [fromDate, toDate] = dateRange;
-      const data = await getWaterServiceStatistics(fromDate, toDate);
+      const data = await getWaterServiceStatistics(fromDate, toDate, selectedStrategy);
       
       // Sort by revenue from highest to lowest
-      const sortedData = data.sort((a, b) => b.revenue - a.revenue);
+      const sortedData = data.sort((a, b) => b.revenueValue - a.revenueValue);
       
       setStatistics(sortedData);
       
       // Calculate totals
-      const revenue = sortedData.reduce((sum, item) => sum + item.revenue, 0);
-      const contracts = sortedData.reduce((sum, item) => sum + item.totalContracts, 0);
-      
+      const revenue = sortedData.reduce((sum, item) => sum + item.revenueValue, 0);
       setTotalRevenue(revenue);
-      setTotalContracts(contracts);
     } catch (error) {
       console.error("Error fetching statistics:", error);
       message.error("Không thể tải dữ liệu thống kê. Vui lòng thử lại sau!");
@@ -81,14 +86,23 @@ function WaterServiceStatistic() {
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
+    // fetchStatistics will be called automatically by the useEffect
+  };
+
+  const handleStrategyChange = (value) => {
+    setSelectedStrategy(value);
+    // fetchStatistics will be called automatically by the useEffect
   };
 
   const handleFilter = () => {
+    // This function is kept for the filter button, but data will refresh automatically
+    // when dateRange or selectedStrategy changes
     fetchStatistics();
   };
 
   const handleResetFilter = () => {
     setDateRange([null, null]);
+    setSelectedStrategy("total");
     // Re-fetch statistics without date filters
     fetchStatistics();
   };
@@ -97,14 +111,51 @@ function WaterServiceStatistic() {
     setSelectedService(service);
     setDetailModalVisible(true);
     setDetailLoading(true);
+    setDetailStrategy("total"); // Reset to default strategy when opening modal
     
     try {
       const [fromDate, toDate] = dateRange;
+      
+      // Get detailed service information with the same strategy
+      const serviceDetail = await getWaterServiceStatisticById(
+        service.serviceId, 
+        fromDate, 
+        toDate, 
+        "total" // Always start with total for details
+      );
+      
+      // Get detailed bills
       const billsData = await getWaterServiceBills(service.serviceId, fromDate, toDate);
+      
+      setSelectedService(serviceDetail);
       setDetailedBills(billsData);
     } catch (error) {
-      console.error("Error fetching detailed bills:", error);
+      console.error("Error fetching detailed information:", error);
       message.error("Không thể tải dữ liệu chi tiết. Vui lòng thử lại sau!");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // For automatic detail strategy update
+  const handleDetailStrategyChange = async (value) => {
+    if (!selectedService) return;
+    
+    setDetailStrategy(value);
+    setDetailLoading(true);
+    
+    try {
+      const [fromDate, toDate] = dateRange;
+      const serviceDetail = await getWaterServiceStatisticById(
+        selectedService.serviceId, 
+        fromDate, 
+        toDate, 
+        value
+      );
+      setSelectedService(serviceDetail);
+    } catch (error) {
+      console.error("Error updating service detail strategy:", error);
+      message.error("Không thể cập nhật chiến lược thống kê. Vui lòng thử lại!");
     } finally {
       setDetailLoading(false);
     }
@@ -112,6 +163,46 @@ function WaterServiceStatistic() {
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+  };
+
+  // Format the revenue value based on strategy
+  const formatRevenue = (value, strategy) => {
+    if (strategy === "total") {
+      return formatCurrency(value);
+    } else if (strategy === "monthly_average") {
+      return formatCurrency(value) + "/tháng";
+    } else if (strategy === "growth_rate") {
+      return value.toFixed(2) + "%";
+    }
+    return formatCurrency(value);
+  };
+
+  // Get appropriate icon for revenue strategy
+  const getRevenueIcon = (strategy) => {
+    switch (strategy) {
+      case "total": 
+        return <DollarOutlined />;
+      case "monthly_average":
+        return <LineChartOutlined />;
+      case "growth_rate":
+        return <PercentageOutlined />;
+      default:
+        return <DollarOutlined />;
+    }
+  };
+
+  // Get title for revenue based on strategy
+  const getRevenueTitle = (strategy) => {
+    switch (strategy) {
+      case "total":
+        return "Tổng doanh thu";
+      case "monthly_average":
+        return "Doanh thu trung bình hàng tháng";
+      case "growth_rate":
+        return "Tỷ lệ tăng trưởng doanh thu";
+      default:
+        return "Doanh thu";
+    }
   };
 
   // Main table columns
@@ -134,11 +225,14 @@ function WaterServiceStatistic() {
       width: 100,
     },
     {
-      title: 'Doanh thu',
-      dataIndex: 'revenue',
-      key: 'revenue',
-      render: (revenue) => formatCurrency(revenue),
-      sorter: (a, b) => a.revenue - b.revenue,
+      title: () => {
+        const title = getRevenueTitle(selectedStrategy);
+        return title;
+      },
+      dataIndex: 'revenueValue',
+      key: 'revenueValue',
+      render: (value, record) => formatRevenue(value, record.revenueStrategy),
+      sorter: (a, b) => a.revenueValue - b.revenueValue,
       defaultSortOrder: 'descend',
     },
     {
@@ -176,7 +270,7 @@ function WaterServiceStatistic() {
       dataIndex: 'amount',
       key: 'amount',
       render: (amount) => formatCurrency(amount),
-    },
+    }
   ];
 
   // Determine the date range label for display
@@ -204,20 +298,31 @@ function WaterServiceStatistic() {
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={16}>
-            <Space>
+            <Space direction="horizontal" wrap>
               <Text strong>Khoảng thời gian:</Text>
               <RangePicker 
                 value={dateRange}
                 onChange={handleDateRangeChange}
                 format="DD/MM/YYYY"
               />
+              <Text strong>Chiến lược thống kê:</Text>
+              <Select 
+                value={selectedStrategy}
+                onChange={handleStrategyChange}
+                style={{ width: 200 }}
+              >
+                <Option value="total">Tổng doanh thu</Option>
+                <Option value="monthly_average">Trung bình hàng tháng</Option>
+                <Option value="growth_rate">Tỷ lệ tăng trưởng</Option>
+              </Select>
+              {/* Filter button is now optional since data auto-refreshes when filters change */}
               <Button 
                 type="primary" 
-                icon={<FilterOutlined />} 
-                onClick={handleFilter}
+                icon={<ReloadOutlined />} 
+                onClick={fetchStatistics}
                 style={{ backgroundColor: "#FF7F50" }}
               >
-                Lọc
+                Làm mới
               </Button>
               <Button 
                 icon={<ReloadOutlined />} 
@@ -238,10 +343,10 @@ function WaterServiceStatistic() {
         <Col xs={24} md={12}>
           <Card>
             <Statistic
-              title="Tổng doanh thu"
+              title={getRevenueTitle(selectedStrategy)}
               value={totalRevenue}
-              formatter={(value) => formatCurrency(value)}
-              prefix={<DollarOutlined />}
+              formatter={(value) => formatRevenue(value, selectedStrategy)}
+              prefix={getRevenueIcon(selectedStrategy)}
               valueStyle={{ color: '#FF7F50' }}
             />
           </Card>
@@ -272,86 +377,111 @@ function WaterServiceStatistic() {
       >
         {selectedService && (
           <div>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Statistic
-                  title="Doanh thu"
-                  value={selectedService.revenue}
-                  formatter={(value) => formatCurrency(value)}
-                  valueStyle={{ color: '#FF7F50' }}
-                />
-              </Col>
-            </Row>
-
-            <Card title="Thông tin dịch vụ" style={{ marginTop: 16 }}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text strong>Mã dịch vụ:</Text> {selectedService.serviceId}
+            <Spin spinning={detailLoading}>
+              <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                <Col span={16}>
+                  <Statistic
+                    title={getRevenueTitle(selectedService.revenueStrategy)}
+                    value={selectedService.revenueValue}
+                    formatter={(value) => formatRevenue(value, selectedService.revenueStrategy)}
+                    prefix={getRevenueIcon(selectedService.revenueStrategy)}
+                    valueStyle={{ color: '#FF7F50' }}
+                  />
                 </Col>
-                <Col span={12}>
-                  <Text strong>Đơn vị tính:</Text> {selectedService.unit}
+                <Col span={8}>
+                  <Text strong>Chiến lược thống kê:</Text>
+                  <Select 
+                    value={detailStrategy}
+                    onChange={handleDetailStrategyChange}
+                    style={{ width: '100%', marginTop: 8 }}
+                  >
+                    <Option value="total">Tổng doanh thu</Option>
+                    <Option value="monthly_average">Trung bình hàng tháng</Option>
+                    <Option value="growth_rate">Tỷ lệ tăng trưởng</Option>
+                  </Select>
                 </Col>
               </Row>
-              {selectedService.description && (
-                <Row style={{ marginTop: 8 }}>
-                  <Col span={24}>
-                    <Text strong>Mô tả:</Text> {selectedService.description}
-                  </Col>
-                </Row>
-              )}
-            </Card>
 
-            <Card title="Bảng giá dịch vụ" style={{ marginTop: 16 }}>
-              {selectedService.priceRates && selectedService.priceRates.length > 0 ? (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>STT</th>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Từ (m³)</th>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Đến (m³)</th>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Đơn giá (VNĐ)</th>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Ngày hiệu lực</th>
-                      <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Ngày hết hạn</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedService.priceRates.map((rate, index) => (
-                      <tr key={rate.rateId || index}>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{rate.fromAmount}</td>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{rate.toAmount}</td>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'right' }}>
-                          {new Intl.NumberFormat('vi-VN').format(rate.unitPrice)} VNĐ
-                        </td>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>
-                          {dayjs(rate.effectiveDate).format('DD/MM/YYYY')}
-                        </td>
-                        <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>
-                          {dayjs(rate.expiryDate).format('DD/MM/YYYY')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <Empty description="Không có dữ liệu bảng giá" />
-              )}
-            </Card>
+              <Tabs defaultActiveKey="info">
+                <Tabs.TabPane tab="Thông tin dịch vụ" key="info">
+                  <Card>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Text strong>Mã dịch vụ:</Text> {selectedService.serviceId}
+                      </Col>
+                      <Col span={12}>
+                        <Text strong>Đơn vị tính:</Text> {selectedService.unit}
+                      </Col>
+                    </Row>
+                    {selectedService.description && (
+                      <Row style={{ marginTop: 8 }}>
+                        <Col span={24}>
+                          <Text strong>Mô tả:</Text> {selectedService.description}
+                        </Col>
+                      </Row>
+                    )}
+                    <Row style={{ marginTop: 8 }}>
+                      <Col span={24}>
+                        <Text strong>Khoảng thời gian thống kê:</Text> {' '}
+                        {selectedService.fromDate ? dayjs(selectedService.fromDate).format('DD/MM/YYYY') : 'N/A'} 
+                        {' - '} 
+                        {selectedService.toDate ? dayjs(selectedService.toDate).format('DD/MM/YYYY') : 'N/A'}
+                      </Col>
+                    </Row>
+                  </Card>
 
-            <Card title="Danh sách hóa đơn" style={{ marginTop: 16 }}>
-              <Spin spinning={detailLoading}>
-                {detailedBills.length > 0 ? (
-                  <Table 
-                    columns={billColumns} 
-                    dataSource={detailedBills}
-                    rowKey="billId"
-                    pagination={{ pageSize: 5 }}
-                  />
-                ) : (
-                  <Empty description="Không có dữ liệu hóa đơn" />
-                )}
-              </Spin>
-            </Card>
+                  <Card title="Bảng giá dịch vụ" style={{ marginTop: 16 }}>
+                    {selectedService.priceRates && selectedService.priceRates.length > 0 ? (
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>STT</th>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Từ (m³)</th>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Đến (m³)</th>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Đơn giá (VNĐ)</th>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Ngày hiệu lực</th>
+                            <th style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>Ngày hết hạn</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedService.priceRates.map((rate, index) => (
+                            <tr key={rate.rateId || index}>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{index + 1}</td>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{rate.fromAmount}</td>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>{rate.toAmount}</td>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'right' }}>
+                                {new Intl.NumberFormat('vi-VN').format(rate.unitPrice)} VNĐ
+                              </td>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>
+                                {dayjs(rate.effectiveDate).format('DD/MM/YYYY')}
+                              </td>
+                              <td style={{ border: '1px solid #eee', padding: '8px', textAlign: 'center' }}>
+                                {dayjs(rate.expiryDate).format('DD/MM/YYYY')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <Empty description="Không có dữ liệu bảng giá" />
+                    )}
+                  </Card>
+                </Tabs.TabPane>
+
+                <Tabs.TabPane tab="Danh sách hóa đơn" key="bills">
+                  {detailedBills.length > 0 ? (
+                    <Table 
+                      columns={billColumns} 
+                      dataSource={detailedBills}
+                      rowKey="billId"
+                      pagination={{ pageSize: 5 }}
+                    />
+                  ) : (
+                    <Empty description="Không có dữ liệu hóa đơn" />
+                  )}
+                </Tabs.TabPane>
+              </Tabs>
+            </Spin>
           </div>
         )}
       </Modal>
