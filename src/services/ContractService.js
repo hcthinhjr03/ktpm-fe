@@ -27,7 +27,24 @@ export const getContractById = async (id) => {
 // Create new contract
 export const createContract = async (contractData) => {
   try {
-    const response = await post(BASE_PATH, contractData);
+    // Chuyển đổi dữ liệu để phù hợp với định dạng mà backend mong đợi
+    const formattedData = {
+      contract: {
+        signDate: contractData.signDate,
+        startDate: contractData.startDate,
+        endDate: contractData.endDate,
+        status: contractData.status,
+        apartment: contractData.apartment,
+        waterService: contractData.waterService,
+        customer: contractData.customer
+      },
+      // Gửi initialReading như một giá trị đơn giản
+      initialReading: contractData.initialReading
+    };
+    
+    console.log("Sending contract data:", JSON.stringify(formattedData));
+    
+    const response = await post(BASE_PATH, formattedData);
     return response;
   } catch (error) {
     console.error("Error creating contract:", error);

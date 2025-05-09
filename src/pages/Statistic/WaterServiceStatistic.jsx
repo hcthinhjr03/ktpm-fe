@@ -305,7 +305,7 @@ function WaterServiceStatistic() {
                 onChange={handleDateRangeChange}
                 format="DD/MM/YYYY"
               />
-              <Text strong>Chiến lược thống kê:</Text>
+              <Text strong>Chiến lược:</Text>
               <Select 
                 value={selectedStrategy}
                 onChange={handleStrategyChange}
